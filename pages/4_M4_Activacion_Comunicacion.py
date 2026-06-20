@@ -273,7 +273,7 @@ POSTS_EJEMPLO = {
 
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 [data-testid="stSidebar"] { background-color: #5c0c18 !important; }
@@ -281,21 +281,33 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 [data-testid="stSidebar"] div, [data-testid="stSidebar"] label { color: #f5e6e9 !important; }
 
 .header-modulo {
-    background: linear-gradient(135deg, #7a4a04 0%, #b8860b 100%);
-    padding: 28px 32px 22px 32px;
-    border-radius: 14px; margin-bottom: 22px;
+    --accent: #e8a33d;
+    background: #14181f;
+    padding: 28px 32px 24px 32px;
+    border-radius: 8px; margin-bottom: 22px;
     position: relative; overflow: hidden;
+    border-bottom: 2px solid var(--accent);
 }
 .header-modulo::after {
     content: ''; position: absolute; top: -45px; right: -45px;
     width: 180px; height: 180px; border-radius: 50%;
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.04);
 }
-.header-modulo h1 { color: #fff; font-size: 1.55rem; font-weight: 700; margin: 0 0 4px; }
-.header-modulo p  { color: #fde8c4; font-size: 0.88rem; margin: 0; }
+.header-modulo .hm-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+}
+.header-modulo h1 {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase;
+    color: #eef1f0; font-size: 1.85rem; letter-spacing: -0.005em; margin: 0 0 6px; line-height: 1.05;
+}
+.header-modulo p  { color: #8b95a8; font-size: 0.92rem; margin: 0; max-width: 620px; line-height: 1.5; }
+.header-modulo .hm-dots { position: absolute; right: 28px; top: 26px; display: flex; gap: 6px; }
+.header-modulo .hm-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.55; }
+.header-modulo .hm-dots span:first-child { opacity: 1; }
 
-.tag { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 2px 9px;
-       border-radius: 10px; margin-right: 4px; letter-spacing: 0.04em; text-transform: uppercase;
+.tag { font-family: 'JetBrains Mono', monospace; display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 2px 8px;
+       border-radius: 3px; margin-right: 4px; letter-spacing: 0.05em; text-transform: uppercase;
        vertical-align: middle; }
 .tag.real { background: #dcfce7; color: #166534; }
 .tag.demo { background: #fef3c7; color: #92400e; }
@@ -845,7 +857,9 @@ def main():
 
     st.html("""
     <div class="header-modulo">
-      <h1>📱 Módulo 4 · Activación y Comunicación</h1>
+      <div class="hm-dots"><span></span><span></span><span></span></div>
+      <div class="hm-eyebrow">Módulo 04 · En operación</div>
+      <h1>📱 Activación y Comunicación</h1>
       <p>El contacto correcto · con el mensaje que lo mueve · por el canal que usa</p>
     </div>
     """)

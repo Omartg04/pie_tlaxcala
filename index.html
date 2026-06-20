@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIE Tlaxcala · Sala de Operaciones · Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-base:#14181f;
+    --bg-raised:#1b212b;
+    --bg-raised-2:#202836;
+    --border-subtle:rgba(255,255,255,.08);
+    --border-strong:rgba(255,255,255,.16);
+    --text-primary:#eef1f0;
+    --text-secondary:#8b95a8;
+    --text-muted:#5e6779;
+    --red:#c41230;
+    --red-text:#ff5a76;
+    --amber:#e8a33d;
+    --green:#3f7a52;
+    --green-text:#5fae78;
+    --steel:#5b7a9e;
+    --font-display:'Barlow Condensed',sans-serif;
+    --font-body:'DM Sans',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-base);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none;}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:3px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ── Topbar ── */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 28px;border-bottom:1px solid var(--border-subtle);
+  }
+  .topbar-brand{
+    font-family:var(--font-mono);font-size:.78rem;font-weight:700;
+    letter-spacing:.08em;color:var(--text-secondary);
+  }
+  .topbar-brand span{color:var(--red-text);}
+  .topbar-cta{
+    font-family:var(--font-mono);font-size:.74rem;font-weight:700;
+    letter-spacing:.04em;padding:9px 16px;border:1px solid var(--border-strong);
+    border-radius:3px;color:var(--text-primary);transition:.15s;
+  }
+  .topbar-cta:hover{border-color:var(--red);background:rgba(196,18,48,.12);}
+
+  /* ── Hero ── */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--border-subtle);}
+  .hero-bg{position:absolute;inset:0;z-index:0;opacity:.55;}
+  .hero-bg svg{width:100%;height:100%;}
+  .dot-dim{fill:var(--steel);opacity:.35;}
+  .dot-active{fill:var(--red);}
+  .pulse{animation:pulse 2.6s ease-in-out infinite;}
+  @keyframes pulse{
+    0%,100%{opacity:.9;r:4;}
+    50%{opacity:.25;r:7;}
+  }
+  .ring{fill:none;stroke:var(--border-strong);stroke-width:1;}
+  @media (prefers-reduced-motion:reduce){
+    .pulse{animation:none;opacity:.7;}
+  }
+  .hero-content{position:relative;z-index:1;padding:88px 28px 72px;max-width:1180px;margin:0 auto;}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:.72rem;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--amber);
+    margin-bottom:18px;
+  }
+  .hero-content h1{
+    font-family:var(--font-display);font-weight:800;text-transform:uppercase;
+    font-size:clamp(2.6rem,6vw,4.6rem);line-height:.98;letter-spacing:-.01em;
+    margin:0 0 6px;
+  }
+  .hero-sub-name{color:var(--red-text);}
+  .hero-lede{
+    font-size:1.08rem;color:var(--text-secondary);max-width:560px;
+    margin:18px 0 28px;line-height:1.6;
+  }
+  .hero-meta{display:flex;gap:10px;flex-wrap:wrap;}
+  .meta-chip{
+    font-family:var(--font-mono);font-size:.74rem;font-weight:500;
+    border:1px solid var(--border-strong);border-radius:3px;
+    padding:6px 12px;color:var(--text-secondary);
+  }
+
+  /* ── Section heads ── */
+  .section{padding:64px 28px;}
+  .section-head{max-width:1180px;margin:0 auto 36px;}
+  .eyebrow-sm{
+    font-family:var(--font-mono);font-size:.7rem;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--steel);
+    margin-bottom:10px;display:block;
+  }
+  .section-head h2{
+    font-family:var(--font-display);font-weight:700;font-size:1.55rem;
+    line-height:1.3;color:var(--text-primary);margin:0;max-width:760px;
+  }
+
+  /* ── Estaciones ── */
+  .stations{background:var(--bg-base);}
+  .stations-grid{
+    max-width:1180px;margin:0 auto;display:grid;
+    grid-template-columns:repeat(2,1fr);gap:1px;
+    background:var(--border-subtle);border:1px solid var(--border-subtle);
+  }
+  .station{background:var(--bg-raised);padding:30px 28px;}
+  .station-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .station-num{font-family:var(--font-mono);font-size:.85rem;color:var(--text-muted);}
+  .station-status{
+    font-family:var(--font-mono);font-size:.65rem;font-weight:700;
+    letter-spacing:.06em;color:var(--green-text);display:flex;align-items:center;gap:6px;
+  }
+  .station-status i{width:6px;height:6px;border-radius:50%;background:var(--green-text);display:inline-block;}
+  .station-tag{
+    font-family:var(--font-mono);font-size:.7rem;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--red-text);margin-bottom:10px;
+  }
+  .station h3{
+    font-family:var(--font-display);font-weight:700;font-size:1.45rem;
+    margin:0 0 10px;line-height:1.2;
+  }
+  .station p{color:var(--text-secondary);font-size:.9rem;line-height:1.6;margin:0 0 18px;}
+  .station-link{
+    font-family:var(--font-mono);font-size:.76rem;font-weight:700;
+    color:var(--text-primary);border-bottom:1px solid var(--border-strong);
+    padding-bottom:2px;transition:.15s;
+  }
+  .station-link:hover{color:var(--amber);border-color:var(--amber);}
+
+  /* ── Pulso / ticker ── */
+  .pulso{background:var(--bg-raised);border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);}
+  .ticker{
+    max-width:1180px;margin:0 auto;display:grid;
+    grid-template-columns:repeat(5,1fr);gap:0;
+  }
+  .ticker-item{
+    padding:8px 22px 8px 0;border-right:1px solid var(--border-subtle);position:relative;
+  }
+  .ticker-item:last-child{border-right:none;padding-right:0;}
+  .ticker-value{
+    font-family:var(--font-mono);font-weight:700;font-size:1.7rem;color:var(--text-primary);
+  }
+  .ticker-label{font-size:.8rem;font-weight:600;color:var(--text-primary);margin-top:4px;}
+  .ticker-ctx{font-size:.72rem;color:var(--text-muted);margin-top:2px;line-height:1.4;}
+  .badge{
+    display:inline-block;font-family:var(--font-mono);font-size:.62rem;font-weight:700;
+    letter-spacing:.05em;padding:2px 7px;border-radius:2px;margin-top:8px;
+  }
+  .badge.real{background:rgba(196,18,48,.18);color:var(--red-text);border:1px solid rgba(196,18,48,.4);}
+  .badge.demo{background:rgba(139,149,168,.14);color:var(--text-secondary);border:1px solid var(--border-strong);}
+
+  /* ── Hallazgos / intel ── */
+  .intel-grid{
+    max-width:1180px;margin:0 auto;display:grid;
+    grid-template-columns:repeat(2,1fr);gap:14px;
+  }
+  .intel-card{
+    background:var(--bg-raised);border:1px solid var(--border-subtle);
+    border-left:2px solid var(--border-strong);border-radius:4px;padding:18px 20px;
+  }
+  .intel-card.real{border-left-color:var(--red);}
+  .intel-card.proximo{border-left-color:var(--steel);}
+  .intel-tag{
+    display:inline-block;font-family:var(--font-mono);font-size:.62rem;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:2px;margin-bottom:9px;
+  }
+  .intel-tag.real{background:rgba(196,18,48,.16);color:var(--red-text);}
+  .intel-tag.proximo{background:rgba(91,122,158,.16);color:var(--steel);}
+  .intel-dato{font-size:.92rem;font-weight:600;color:var(--text-primary);margin:0 0 6px;line-height:1.45;}
+  .intel-impl{font-size:.82rem;color:var(--text-secondary);margin:0;line-height:1.5;}
+
+  /* ── Footer ── */
+  footer{
+    text-align:center;padding:32px 28px 40px;font-size:.74rem;color:var(--text-muted);
+    border-top:1px solid var(--border-subtle);font-family:var(--font-mono);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width:860px){
+    .stations-grid{grid-template-columns:1fr;}
+    .ticker{grid-template-columns:repeat(2,1fr);}
+    .ticker-item{border-right:none;border-bottom:1px solid var(--border-subtle);padding:14px 0;}
+    .intel-grid{grid-template-columns:1fr;}
+    .hero-content{padding:64px 24px 52px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-brand">D&AI <span>·</span> PIE TLAXCALA</div>
+  <a href="#" class="topbar-cta" data-route="home" target="_blank" rel="noopener">Entrar a la plataforma →</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg">
+    <svg viewBox="0 0 1180 460" preserveAspectRatio="xMaxYMid slice">
+      <circle class="ring" cx="980" cy="120" r="60"/>
+      <circle class="ring" cx="980" cy="120" r="120"/>
+      <circle class="ring" cx="980" cy="120" r="180"/>
+      <circle class="dot-dim" cx="860" cy="80" r="3"/>
+      <circle class="dot-dim" cx="910" cy="200" r="3"/>
+      <circle class="dot-dim" cx="1040" cy="60" r="3"/>
+      <circle class="dot-dim" cx="1080" cy="180" r="3"/>
+      <circle class="dot-dim" cx="780" cy="160" r="3"/>
+      <circle class="dot-dim" cx="1000" cy="280" r="3"/>
+      <circle class="dot-dim" cx="1120" cy="250" r="3"/>
+      <circle class="dot-dim" cx="830" cy="260" r="3"/>
+      <circle class="dot-active pulse" cx="980" cy="120" r="4" style="animation-delay:0s"/>
+      <circle class="dot-active pulse" cx="900" cy="130" r="4" style="animation-delay:.6s"/>
+      <circle class="dot-active pulse" cx="1030" cy="150" r="4" style="animation-delay:1.2s"/>
+      <circle class="dot-active pulse" cx="950" cy="200" r="4" style="animation-delay:1.8s"/>
+    </svg>
+  </div>
+  <div class="hero-content">
+    <div class="eyebrow">Data &amp; AI Inclusion Technologies · Plataforma de Inteligencia Electoral · Tlaxcala</div>
+    <h1>PIE Tlaxcala<br><span class="hero-sub-name">Anabel Ávalos</span></h1>
+    <p class="hero-lede">De la intuición a la evidencia. Construyes terreno electoral antes de la candidatura, con datos propios.</p>
+    <div class="hero-meta">
+      <span class="meta-chip">📅 ENCUESTA · 19–22 MAR 2026</span>
+      <span class="meta-chip">🚩 OPERATIVO · PILOTO JUN 2026</span>
+    </div>
+  </div>
+</section>
+
+<section class="section stations">
+  <div class="section-head">
+    <span class="eyebrow-sm">Ruta operativa · 4 estaciones</span>
+    <h2>La plataforma genera tus datos, construye inteligencia territorial y activa la operación rumbo a 2027</h2>
+  </div>
+  <div class="stations-grid">
+    <article class="station">
+      <div class="station-head">
+        <span class="station-num">01</span>
+        <span class="station-status"><i></i>EN OPERACIÓN</span>
+      </div>
+      <div class="station-tag">Datos y Segmentación</div>
+      <h3>¿Qué piensa el electorado tlaxcalteca?</h3>
+      <p>Vas más allá de si te conocen o no: sabes qué arquetipos de votante hay en Tlaxcala, qué los enoja, qué tema puede mover su voto, y qué se dice de ti en redes.</p>
+      <a class="station-link" href="#" data-route="m1" target="_blank" rel="noopener">Ver datos y segmentación →</a>
+    </article>
+    <article class="station">
+      <div class="station-head">
+        <span class="station-num">02</span>
+        <span class="station-status"><i></i>EN OPERACIÓN</span>
+      </div>
+      <div class="station-tag">Mapa de Decisiones</div>
+      <h3>¿A dónde voy primero?</h3>
+      <p>Sabes quién vive en cada sección, qué arquetipo domina, cómo votó antes y cuánto rinde tu visita — para mandar a tu equipo exactamente donde más pesa.</p>
+      <a class="station-link" href="#" data-route="m2" target="_blank" rel="noopener">Ver mapa de decisiones →</a>
+    </article>
+    <article class="station">
+      <div class="station-head">
+        <span class="station-num">03</span>
+        <span class="station-status"><i></i>EN OPERACIÓN</span>
+      </div>
+      <div class="station-tag">Inducción y Detección</div>
+      <h3>¿Cómo va tu equipo en la calle?</h3>
+      <p>Ves en tiempo real qué sección ya cubrió la brigada, a quién encontró —simpatizante, indeciso o adverso— y qué le preocupa, casa por casa. Nadie camina a ciegas.</p>
+      <a class="station-link" href="#" data-route="m3" target="_blank" rel="noopener">Ver inducción y detección →</a>
+    </article>
+    <article class="station">
+      <div class="station-head">
+        <span class="station-num">04</span>
+        <span class="station-status"><i></i>EN OPERACIÓN</span>
+      </div>
+      <div class="station-tag">Activación y Comunicación</div>
+      <h3>¿A quién le mando el mensaje correcto?</h3>
+      <p>Cada contacto recibe el mensaje que a él lo mueve, no uno genérico — por SMS, correo o WhatsApp, más el contenido que tu equipo de redes necesita publicar esta semana.</p>
+      <a class="station-link" href="#" data-route="m4" target="_blank" rel="noopener">Ver activación y comunicación →</a>
+    </article>
+  </div>
+</section>
+
+<section class="pulso">
+  <div class="section" style="padding-top:40px;padding-bottom:40px;">
+    <div class="section-head" style="margin-bottom:24px;">
+      <span class="eyebrow-sm">Pulso operativo</span>
+    </div>
+    <div class="ticker">
+      <div class="ticker-item">
+        <div class="ticker-value">1,847</div>
+        <div class="ticker-label">Personas contactadas</div>
+        <div class="ticker-ctx">en campo · piloto en 3 municipios</div>
+        <span class="badge demo">DEMO</span>
+      </div>
+      <div class="ticker-item">
+        <div class="ticker-value">~6,649</div>
+        <div class="ticker-label">Alcance estimado</div>
+        <div class="ticker-ctx">~3.6 integrantes promedio por hogar</div>
+        <span class="badge demo">DEMO</span>
+      </div>
+      <div class="ticker-item">
+        <div class="ticker-value">38 / ~120</div>
+        <div class="ticker-label">Secciones con presencia</div>
+        <div class="ticker-ctx">Tlaxcala capital, Apizaco, Huamantla</div>
+        <span class="badge demo">DEMO</span>
+      </div>
+      <div class="ticker-item">
+        <div class="ticker-value">14.0%</div>
+        <div class="ticker-label">Preferencia PRI gubernatura</div>
+        <div class="ticker-ctx">Enkoll / El Universal · 19–22 mar 2026</div>
+        <span class="badge real">REAL</span>
+      </div>
+      <div class="ticker-item">
+        <div class="ticker-value">68.5%</div>
+        <div class="ticker-label">Con celular válido</div>
+        <div class="ticker-ctx">listos para WhatsApp o SMS</div>
+        <span class="badge demo">DEMO</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <span class="eyebrow-sm">Lo que cambia la estrategia</span>
+    <h2>Hallazgos</h2>
+  </div>
+  <div class="intel-grid">
+    <article class="intel-card real">
+      <span class="intel-tag real">Real</span>
+      <p class="intel-dato">Morena domina con 47% de intención de voto directa para gobernador; el PRI queda en segundo lugar lejano, con 14%.</p>
+      <p class="intel-impl">La brecha de marca es enorme. El PRI por sí solo no cierra esa distancia — la campaña tiene que ser de la persona, no del partido.</p>
+    </article>
+    <article class="intel-card real">
+      <span class="intel-tag real">Real</span>
+      <p class="intel-dato">Ávalos depende más de su marca personal que del voto duro priista: buena parte de quienes la mencionan como opción vienen de fuera del PRI.</p>
+      <p class="intel-impl">Hay que blindar ese voto cruzado y construir un mensaje que no dependa del sello del partido.</p>
+    </article>
+    <article class="intel-card real">
+      <span class="intel-tag real">Real</span>
+      <p class="intel-dato">En 2021, Ávalos ya llegó a 37% estatal frente a Lorena Cuéllar (Morena) — la base de competitividad existe.</p>
+      <p class="intel-impl">No se arranca de cero: el reto es reactivar y territorializar esa base, no construirla desde el principio.</p>
+    </article>
+    <article class="intel-card real">
+      <span class="intel-tag real">Real</span>
+      <p class="intel-dato">Tlaxcala tiene 15 distritos locales y 60 municipios — el piloto arranca enfocado en 3: capital, Apizaco y Huamantla.</p>
+      <p class="intel-impl">Foco antes que cobertura total. Se prioriza donde el peso poblacional y la disputabilidad son mayores.</p>
+    </article>
+    <article class="intel-card proximo">
+      <span class="intel-tag proximo">Próximo módulo</span>
+      <p class="intel-dato">Los arquetipos del elector tlaxcalteca y su distribución por sección se construyen en el Módulo 1.</p>
+      <p class="intel-impl">Encuesta interna propia + Machine Learning sobre reactivos accionables — no solo horse race.</p>
+    </article>
+    <article class="intel-card proximo">
+      <span class="intel-tag proximo">Próximo módulo</span>
+      <p class="intel-dato">El mapa de secciones más rentables para capturar indecisos se construye en el Módulo 2.</p>
+      <p class="intel-impl">Combina encuesta propia, censo a nivel sección y el historial electoral 2016–2021.</p>
+    </article>
+  </div>
+</section>
+
+<footer>
+  DATA &amp; AI INCLUSION TECHNOLOGIES · PLATAFORMA DE INTELIGENCIA ELECTORAL · ANABEL ÁVALOS · PRI TLAXCALA 2027 · CONFIDENCIAL<br>
+  USO EXCLUSIVO DEL EQUIPO DE CAMPAÑA
+</footer>
+
+<script>
+  // ════════════════════════════════════════════════════════════════════════
+  // CONFIG DE NAVEGACIÓN — único lugar que se toca para alternar entornos
+  // ════════════════════════════════════════════════════════════════════════
+
+  // → Para la versión pública en Netlify, deja esta línea activa:
+  const STREAMLIT_BASE_URL = "https://pie-tlaxcala.streamlit.app";
+
+  // → Para probar en tu laptop, comenta la línea de arriba y descomenta esta
+  //   (requiere tener `streamlit run Home.py` corriendo al mismo tiempo):
+  // const STREAMLIT_BASE_URL = "http://localhost:8501";
+
+  const ROUTES = {
+    home: "",
+    m1: "/M1_Datos_Segmentacion",
+    m2: "/M2_Mapa_Decisiones",
+    m3: "/M3_Induccion_Deteccion",
+    m4: "/M4_Activacion_Comunicacion",
+  };
+
+  document.querySelectorAll("[data-route]").forEach((el) => {
+    const key = el.getAttribute("data-route");
+    el.href = STREAMLIT_BASE_URL + (ROUTES[key] ?? "");
+  });
+</script>
+</body>
+</html>
