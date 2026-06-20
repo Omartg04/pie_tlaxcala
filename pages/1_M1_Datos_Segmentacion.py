@@ -13,6 +13,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(
     page_title="M1 · Datos y Segmentación · PIE Tlaxcala",
@@ -299,9 +300,10 @@ FUENTES_TIPO = [
 
 # ── Página de Facebook a analizar (Tab 3, prueba de valor con Apify) ───────
 FACEBOOK_PAGE_URL = "https://www.facebook.com/elsoldetlaxcala"
-# NOTA DE VERIFICACIÓN: el actor y el esquema de input de abajo siguen el patrón
-# documentado de los "Facebook Posts Scraper" de Apify (sin login). Verificar el
-# actor_id exacto y los nombres de campo en la consola de Apify antes de producción.
+# Actor oficial de Apify (publicado por la propia Apify, no un tercero), verificado
+# contra apify.com/apify/facebook-posts-scraper/input-schema: acepta startUrls=[{"url":...}]
+# y resultsLimit=int; el actor solo lee posts públicos de la página (no comentarios).
+# Costo de referencia (consultado jun 2026): ~$2.00 USD por cada 1,000 posts.
 APIFY_ACTOR_ID = "apify~facebook-posts-scraper"
 
 # ── EJEMPLO ILUSTRATIVO — solo para previsualizar el diseño, NUNCA se mezcla ──
@@ -679,28 +681,73 @@ def analizar_temas_con_claude(temas, fuentes):
         },
         json={
             "model": "claude-sonnet-4-6",
-            "max_tokens": 4000,
+            "max_tokens": 8000,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_prompt}],
-            "tools": [{"type": "web_search_20250305", "name": "web_search"}],
+            "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 4}],
         },
-        timeout=90,
+        timeout=180,
     )
     response.raise_for_status()
     data = response.json()
 
+    stop_reason = data.get("stop_reason")
     texto = "".join(
         block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"
     ).strip()
     texto = texto.replace("```json", "").replace("```", "").strip()
-    return json.loads(texto)
+
+    if not texto:
+        # No se generó ningún bloque de texto — casi siempre porque la respuesta se
+        # truncó a media búsqueda (stop_reason == "max_tokens") antes de escribir el JSON.
+        tipos = [b.get("type") for b in data.get("content", [])]
+        raise RuntimeError(
+            f"Claude no devolvió texto (stop_reason={stop_reason}, bloques recibidos={tipos}). "
+            "Probablemente se quedó sin espacio de tokens investigando antes de redactar el "
+            "JSON final — intenta de nuevo; si persiste, reduce el número de temas por corrida."
+        )
+
+    # Extracción tolerante: si el modelo agregó algo de texto alrededor del JSON,
+    # nos quedamos solo con el primer '{' al último '}'.
+    inicio, fin = texto.find("{"), texto.rfind("}")
+    if inicio == -1 or fin == -1 or fin < inicio:
+        raise RuntimeError(f"La respuesta no contenía un JSON reconocible: {texto[:300]!r}")
+    texto_json = texto[inicio:fin + 1]
+
+    try:
+        return json.loads(texto_json)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"El JSON devuelto por Claude no se pudo parsear ({e}). "
+            f"stop_reason={stop_reason}. Primeros 300 caracteres: {texto_json[:300]!r}"
+        )
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def analizar_temas_con_claude_cacheado(temas, fuentes, dia, forzar_contador):
+    """
+    Envoltura con caché de 24h sobre analizar_temas_con_claude.
+    - `dia` y `forzar_contador` son parte de la llave de caché: cambia `dia` y
+      expira solo (una vez al día); cambia `forzar_contador` (botón "Forzar
+      nueva consulta") y se dispara una llamada real aunque sea el mismo día.
+    - El timestamp se calcula DENTRO de la función, así que solo se actualiza
+      cuando de verdad hubo una llamada nueva — en un cache hit se reutiliza
+      el mismo timestamp guardado, nunca se finge "recién actualizado".
+    """
+    resultado = analizar_temas_con_claude(list(temas), list(fuentes))
+    resultado["_fetched_at"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+    return resultado
 
 
 def analizar_facebook_con_apify(page_url):
     """
-    Llamada REAL a un actor de Apify "Facebook Posts Scraper" (sin login) vía el
+    Llamada REAL al actor oficial de Apify "apify/facebook-posts-scraper" vía el
     endpoint run-sync-get-dataset-items — una sola llamada HTTP, sin polling.
     Analiza únicamente posts de la página (no comentarios de terceros).
+
+    Esquema verificado contra la documentación oficial de Apify (apify.com/apify/
+    facebook-posts-scraper/input-schema): startUrls=[{"url": ...}], resultsLimit=int.
+    El run síncrono puede tardar hasta 300s antes de expirar del lado de Apify.
     """
     token = get_apify_token()
     if not token:
@@ -711,11 +758,31 @@ def analizar_facebook_con_apify(page_url):
         "startUrls": [{"url": page_url}],
         "resultsLimit": 15,
     }
-    resp = requests.post(url, params={"token": token}, json=payload, timeout=90)
-    resp.raise_for_status()
+    try:
+        resp = requests.post(url, params={"token": token}, json=payload, timeout=240)
+    except requests.exceptions.Timeout:
+        raise RuntimeError(
+            "Apify no respondió a tiempo (más de 240s). El actor puede estar lento o "
+            "bloqueado por Facebook en este momento — intenta de nuevo en unos minutos."
+        )
+
+    if not resp.ok:
+        # Apify devuelve {"error": {"type": ..., "message": ...}} en fallos —
+        # mostramos ese mensaje real en vez de solo el código HTTP.
+        try:
+            detalle = resp.json().get("error", {}).get("message", resp.text[:300])
+        except Exception:
+            detalle = resp.text[:300]
+        raise RuntimeError(f"Apify respondió {resp.status_code}: {detalle}")
+
     posts = resp.json()
     if not isinstance(posts, list):
         raise RuntimeError("Formato de respuesta de Apify inesperado — verificar esquema del actor.")
+    if not posts:
+        raise RuntimeError(
+            "Apify no devolvió posts. Verifica que la página sea pública y que la URL "
+            f"sea correcta: {page_url}"
+        )
     return posts
 
 
@@ -962,28 +1029,43 @@ with tab3:
     st.markdown(
         '<span class="tag real">REAL — EN VIVO</span> Esta pestaña llama en vivo a la API de '
         'Claude con búsqueda web. No usa datos de respaldo: si la llamada falla, se muestra '
-        'el error en vez de un dato simulado.',
+        'el error en vez de un dato simulado. Para controlar costo, el resultado se guarda '
+        '24 horas — si lo necesitas más fresco, usa "Forzar nueva consulta".',
         unsafe_allow_html=True,
     )
 
-    col_btn1, col_btn2 = st.columns([1, 1])
+    if "m1_forzar_contador" not in st.session_state:
+        st.session_state["m1_forzar_contador"] = 0
+
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
     with col_btn1:
-        if st.button("🔄 Analizar temas en vivo", type="primary"):
-            with st.spinner("Buscando y analizando conversación pública sobre Tlaxcala…"):
-                try:
-                    resultado = analizar_temas_con_claude(TEMAS_DESCONTENTO, FUENTES_TIPO)
-                    st.session_state["m1_resultado_temas"] = resultado
-                    st.session_state["m1_error_temas"] = None
-                    st.session_state["m1_modo_temas"] = "vivo"
-                except Exception as e:
-                    st.session_state["m1_resultado_temas"] = None
-                    st.session_state["m1_error_temas"] = str(e)
-                    st.session_state["m1_modo_temas"] = "vivo"
+        disparar_temas = st.button("🔄 Analizar temas en vivo", type="primary")
     with col_btn2:
-        if st.button("👁️ Ver ejemplo de diseño (datos de muestra)"):
-            st.session_state["m1_resultado_temas"] = EJEMPLO_RESULTADO_TEMAS
-            st.session_state["m1_error_temas"] = None
-            st.session_state["m1_modo_temas"] = "ejemplo"
+        forzar_temas = st.button("⚡ Forzar nueva consulta (ignora caché de 24h)")
+    with col_btn3:
+        ver_ejemplo_temas = st.button("👁️ Ver ejemplo de diseño")
+
+    if forzar_temas:
+        st.session_state["m1_forzar_contador"] += 1
+    if disparar_temas or forzar_temas:
+        with st.spinner("Buscando y analizando conversación pública sobre Tlaxcala…"):
+            try:
+                hoy = datetime.now().strftime("%Y-%m-%d")
+                resultado = analizar_temas_con_claude_cacheado(
+                    tuple(TEMAS_DESCONTENTO), tuple(FUENTES_TIPO),
+                    hoy, st.session_state["m1_forzar_contador"],
+                )
+                st.session_state["m1_resultado_temas"] = resultado
+                st.session_state["m1_error_temas"] = None
+                st.session_state["m1_modo_temas"] = "vivo"
+            except Exception as e:
+                st.session_state["m1_resultado_temas"] = None
+                st.session_state["m1_error_temas"] = str(e)
+                st.session_state["m1_modo_temas"] = "vivo"
+    if ver_ejemplo_temas:
+        st.session_state["m1_resultado_temas"] = EJEMPLO_RESULTADO_TEMAS
+        st.session_state["m1_error_temas"] = None
+        st.session_state["m1_modo_temas"] = "ejemplo"
 
     resultado = st.session_state.get("m1_resultado_temas")
     error = st.session_state.get("m1_error_temas")
@@ -1003,6 +1085,11 @@ with tab3:
                 '<div class="ejemplo-banner">👁️ Estás viendo un EJEMPLO ILUSTRATIVO para revisar '
                 'el diseño — no proviene de una llamada en vivo y las citas no son reales.</div>',
                 unsafe_allow_html=True,
+            )
+        elif modo == "vivo" and resultado.get("_fetched_at"):
+            st.caption(
+                f"🕒 Última actualización real: {resultado['_fetched_at']} "
+                "(resultado vigente hasta 24h o hasta que uses 'Forzar nueva consulta')."
             )
 
         ranking = resultado.get("ranking", [])
@@ -1052,29 +1139,51 @@ with tab3:
 
     st.markdown("---")
     st.markdown(
-        '<span class="tag real">REAL — EN VIVO</span> Prueba de valor: posts de El Sol de '
-        'Tlaxcala vía Apify (no comentarios de terceros)',
+        '<span class="tag real">REAL — EN VIVO</span> Prueba de valor: posts de una página de '
+        'Facebook vía Apify (no comentarios de terceros)',
         unsafe_allow_html=True,
     )
     st.caption(
-        "Analiza los posts públicos de la página de Facebook de El Sol de Tlaxcala — un medio "
-        "que ya conoce el equipo — para complementar el ranking de arriba con señal real de "
-        "qué se está cubriendo esta semana."
+        "Analiza los posts públicos de la página de Facebook que indiques — útil para comparar "
+        "medios locales, la página de la aspirante, o cuentas institucionales — para "
+        "complementar el ranking de arriba con señal real de qué se está cubriendo esta semana."
+    )
+
+    if "m1_fb_url" not in st.session_state:
+        st.session_state["m1_fb_url"] = FACEBOOK_PAGE_URL
+
+    url_input = st.text_input(
+        "📎 URL de la página de Facebook a analizar",
+        value=st.session_state["m1_fb_url"],
+        key="m1_fb_url_input",
+        help="Solo páginas públicas (no perfiles personales ni grupos cerrados). "
+             "Ej: https://www.facebook.com/elsoldetlaxcala",
     )
 
     col_fb1, col_fb2 = st.columns([1, 1])
     with col_fb1:
         if st.button("🔄 Actualizar Facebook en vivo"):
-            with st.spinner("Consultando posts públicos de El Sol de Tlaxcala…"):
-                try:
-                    posts = analizar_facebook_con_apify(FACEBOOK_PAGE_URL)
-                    st.session_state["m1_fb_posts"] = posts
-                    st.session_state["m1_fb_error"] = None
-                    st.session_state["m1_fb_modo"] = "vivo"
-                except Exception as e:
-                    st.session_state["m1_fb_posts"] = None
-                    st.session_state["m1_fb_error"] = str(e)
-                    st.session_state["m1_fb_modo"] = "vivo"
+            url_limpia = url_input.strip()
+            if not url_limpia.startswith("https://www.facebook.com/") and \
+               not url_limpia.startswith("https://facebook.com/"):
+                st.session_state["m1_fb_posts"] = None
+                st.session_state["m1_fb_error"] = (
+                    "La URL debe ser una página pública de Facebook, por ejemplo: "
+                    "https://www.facebook.com/nombredepagina"
+                )
+                st.session_state["m1_fb_modo"] = "vivo"
+            else:
+                st.session_state["m1_fb_url"] = url_limpia
+                with st.spinner(f"Consultando posts públicos de {url_limpia}…"):
+                    try:
+                        posts = analizar_facebook_con_apify(url_limpia)
+                        st.session_state["m1_fb_posts"] = posts
+                        st.session_state["m1_fb_error"] = None
+                        st.session_state["m1_fb_modo"] = "vivo"
+                    except Exception as e:
+                        st.session_state["m1_fb_posts"] = None
+                        st.session_state["m1_fb_error"] = str(e)
+                        st.session_state["m1_fb_modo"] = "vivo"
     with col_fb2:
         if st.button("👁️ Ver ejemplo de diseño ", key="m1_fb_ejemplo"):
             st.session_state["m1_fb_posts"] = EJEMPLO_FB_POSTS
@@ -1115,16 +1224,30 @@ with tab3:
         c3.metric("Promedio de comentarios", f"{(sum(comentarios)/len(comentarios)):.0f}" if comentarios else "—")
 
         if fb_posts:
-            idx_top = max(range(len(fb_posts)), key=lambda i: reacciones[i] if reacciones else 0)
-            top = fb_posts[idx_top]
-            st.markdown(f"""
-            <div class="fb-card">
-                <b>Post con mayor interacción reciente</b><br>
-                <div style="margin-top:8px; font-size:0.88rem; color:#1e293b;">
-                    {(top.get('text') or top.get('message') or '(sin texto)')[:280]}
+            st.markdown(f"**Top {min(5, len(fb_posts))} posts por interacción**")
+            orden = sorted(range(len(fb_posts)), key=lambda i: reacciones[i], reverse=True)
+            for rank, idx in enumerate(orden[:5], start=1):
+                p = fb_posts[idx]
+                texto = (p.get("text") or p.get("message") or "(sin texto)")[:280]
+                fecha = p.get("time") or p.get("date") or ""
+                fecha_txt = f" · {fecha[:10]}" if fecha else ""
+                st.markdown(f"""
+                <div class="fb-card" style="margin-bottom:10px;">
+                    <b>#{rank}{fecha_txt}</b><br>
+                    <div style="margin-top:6px; font-size:0.88rem; color:#1e293b;">
+                        {texto}
+                    </div>
+                    <div style="margin-top:8px; font-size:0.78rem; color:#64748b;">
+                        {reacciones[idx]} reacciones · {comentarios[idx]} comentarios
+                    </div>
                 </div>
-                <div style="margin-top:8px; font-size:0.78rem; color:#64748b;">
-                    {reacciones[idx_top]} reacciones · {comentarios[idx_top]} comentarios
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+
+            if len(fb_posts) < 15 and fb_modo == "vivo":
+                st.caption(
+                    f"⚠️ Se pidieron hasta 15 posts y Apify devolvió {len(fb_posts)}. Esto puede "
+                    "deberse a que la página tiene pocos posts recientes visibles sin login, o a "
+                    "que el actor se detuvo antes de completar el límite — no es necesariamente "
+                    "un error, pero si esperabas más, vale la pena revisar la corrida en la "
+                    "consola de Apify."
+                )
