@@ -978,7 +978,7 @@ def main():
                 return f"background-color: {colors.get(v, '#fff')}"
 
             st.dataframe(
-                df_display.style.applymap(_color_enojo, subset=["Enojo"]),
+                df_display.style.map(_color_enojo, subset=["Enojo"]),
                 use_container_width=True, hide_index=True, height=350,
             )
 
